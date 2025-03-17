@@ -9,9 +9,10 @@
 
 ### Lokales Deployment
 
-1. **Repository klonen**  
-   ```bash
-   git clone https://github.com/Furerito/teko_projektverwaltung.git
+#### Repository klonen
+```bash
+git clone https://github.com/Furerito/teko_projektverwaltung.git
+```
 #### In das Projektverzeichnis wechseln
 ```bash
 cd teko_projektverwaltung
