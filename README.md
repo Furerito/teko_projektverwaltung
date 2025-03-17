@@ -13,6 +13,8 @@ https://github.com/Furerito/python_platform_base
 
 ### Lokales Deployment
 
+Docker und Git muss auf dem System vorhanden sein!
+
 #### Repository klonen
 ```bash
 git clone https://github.com/Furerito/teko_projektverwaltung.git
