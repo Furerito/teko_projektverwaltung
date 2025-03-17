@@ -1,0 +1,28 @@
+body {
+  /* Setze die Höhe auf den vollen Bildschirm */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+
+  /* Farbverlauf und Animation */
+  background: linear-gradient(200deg, #bbb, #ffffff, #bbb);
+  background-size: 1200% 1200%;
+  animation: bg-animation 20s ease infinite;
+}
+
+/* Keyframes für die ruhige Animation */
+@keyframes bg-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

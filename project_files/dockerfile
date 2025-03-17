@@ -1,0 +1,23 @@
+# Dockerfile für die Python-App
+FROM python:3.11-slim
+
+# Arbeitsverzeichnis setzen
+WORKDIR /app
+
+# Systempakete installieren
+RUN apt-get update && apt-get install -y \
+    python3-pandas \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python-Abhängigkeiten installieren
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r requirements.txt
+
+# Nano um Dateien zu bearbeiten
+RUN apt-get update && apt-get install -y nano
+
+# Exponiere Port 3355
+EXPOSE 3355
+
+# Startbefehl
+CMD ["python3", "run.py"]

@@ -1,0 +1,261 @@
+{% extends 'base/dashboard_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Kontakte</h1>
+
+    <!-- Button zum Hinzufügen eines neuen Kontakts -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPersonModal">
+            <i class="bi bi-person-plus"></i> Neuer Kontakt
+        </button>
+    </div>
+
+    <!-- Tabelle mit den Personen -->
+    <table id="personenTabelle" class="table table-striped nowrap" style="width:100%">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Vorname</th>
+                <th>Nachname</th>
+                <th>Email</th>
+                <th>Telefonnummer</th>
+                <th>Strasse</th>
+                <th>Hausnummer</th>
+                <th>PLZ</th>
+                <th>Stadt</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody id="personenListe">
+            <!-- Dynamisch via JavaScript gefüllt -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal zum Hinzufügen einer Person -->
+<div class="modal fade" id="addPersonModal" tabindex="-1" aria-labelledby="addPersonModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPersonModalLabel">Neuen Kontakt hinzufügen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPersonForm" autocomplete="off">
+                    <input type="hidden" id="editPersonId">
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label for="vorname" class="form-label">Vorname</label>
+                            <input type="text" class="form-control" id="vorname" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label for="nachname" class="form-label">Nachname</label>
+                            <input type="text" class="form-control" id="nachname" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label for="email" class="form-label">E-Mail</label>
+                            <input type="email" class="form-control" id="email">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label for="telefonnummer" class="form-label">Telefonnummer</label>
+                            <input type="text" class="form-control" id="telefonnummer">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-3">
+                            <label for="strasse" class="form-label">Strasse</label>
+                            <input type="text" class="form-control" id="strasse" required>
+                        </div>
+                        <div class="col-3 mb-3">
+                            <label for="hausnummer" class="form-label">Hausnummer</label>
+                            <input type="text" class="form-control" id="hausnummer" required>
+                        </div>
+                        
+                    </div>
+                    <div class="row">
+                        <div class="col-3 mb-3">
+                            <label for="postleitzahl" class="form-label">Postleitzahl</label>
+                            <input type="text" class="form-control" id="postleitzahl" required>
+                        </div>
+                        <div class="col mb-3">
+                            <label for="stadt" class="form-label">Stadt</label>
+                            <input type="text" class="form-control" id="stadt" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- JavaScript zum Laden und Verwalten der Kontakte -->
+
+<script>
+
+document.title = "Kontakte";
+
+function loadPersonen() {
+    fetch("/personen")
+        .then(response => response.json())
+        .then(data => {
+
+            if ($.fn.DataTable.isDataTable('#personenTabelle')) {
+                $('#personenTabelle').DataTable().destroy();
+            }
+
+            $('#personenTabelle').DataTable({
+                data: data,
+                responsive: true,
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'csv',
+                        text: 'CSV exportieren',
+                        className: 'btn btn-secondary'
+                    },
+                    {
+                        extend: 'excel',
+                        text: 'Excel exportieren',
+                        className: 'btn btn-success'
+                    }
+                ],
+                columns: [
+                    { data: 'id' },
+                    { data: 'vorname' },
+                    { data: 'nachname' },
+                    { data: 'email' },
+                    { data: 'telefonnummer' },
+                    { data: 'strasse' },
+                    { data: 'hausnummer' },
+                    { data: 'postleitzahl' },
+                    { data: 'stadt' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return `
+                                <button class="btn btn-sm btn-warning" onclick="editPerson(${data.id})">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deletePerson(${data.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            `;
+                        }
+                    }
+                ]
+            });
+        });
+}
+
+function addPerson() {
+    const person = {
+        vorname: document.getElementById("vorname").value,
+        nachname: document.getElementById("nachname").value,
+        email: document.getElementById("email").value,
+        telefonnummer: document.getElementById("telefonnummer").value,
+        strasse: document.getElementById("strasse").value,
+        hausnummer: document.getElementById("hausnummer").value,
+        postleitzahl: document.getElementById("postleitzahl").value,
+        stadt: document.getElementById("stadt").value
+    };
+
+    fetch("/personen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(person)
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadPersonen();
+        
+        // Modal schließen (richtige Methode)
+        var modalElement = document.getElementById("addPersonModal");
+        var modalInstance = bootstrap.Modal.getInstance(modalElement);
+        modalInstance.hide();
+        document.body.classList.remove("modal-open");
+        document.querySelector(".modal-backdrop").remove();
+    });
+}
+
+function editPerson(id) {
+
+    fetch(`/personen/${id}`)
+        .then(response => response.json())
+        .then(person => {
+            document.getElementById("editPersonId").value = person.id;
+            document.getElementById("vorname").value = person.vorname;
+            document.getElementById("nachname").value = person.nachname;
+            document.getElementById("email").value = person.email;
+            document.getElementById("telefonnummer").value = person.telefonnummer;
+            document.getElementById("strasse").value = person.strasse;
+            document.getElementById("hausnummer").value = person.hausnummer;
+            document.getElementById("postleitzahl").value = person.postleitzahl;
+            document.getElementById("stadt").value = person.stadt;
+
+            var editModal = new bootstrap.Modal(document.getElementById("addPersonModal"));
+            editModal.show();
+        });
+}
+
+function updatePerson() {
+    const id = document.getElementById("editPersonId").value;
+
+    const person = {
+        vorname: document.getElementById("vorname").value,
+        nachname: document.getElementById("nachname").value,
+        email: document.getElementById("email").value,
+        telefonnummer: document.getElementById("telefonnummer").value,
+        strasse: document.getElementById("strasse").value,
+        hausnummer: document.getElementById("hausnummer").value,
+        postleitzahl: document.getElementById("postleitzahl").value,
+        stadt: document.getElementById("stadt").value
+    };
+
+    fetch(`/personen/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(person)
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadPersonen();
+        var editModalElement = document.getElementById("addPersonModal");
+        var editModalInstance = bootstrap.Modal.getInstance(editModalElement);
+        editModalInstance.hide();
+        document.body.classList.remove("modal-open");
+        document.querySelector(".modal-backdrop").remove();
+    });
+}
+
+function deletePerson(id) {
+    if (confirm("Möchtest du diesen Kontakt wirklich löschen?")) {
+        fetch(`/personen/${id}`, { method: "DELETE" })
+        .then(() => loadPersonen());
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    loadPersonen();
+
+    document.getElementById("addPersonForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        
+        document.getElementById("editPersonId").value == "" ? addPerson() : updatePerson();
+        document.getElementById("addPersonForm").reset();
+    });
+
+});
+</script>
+{% endblock %}

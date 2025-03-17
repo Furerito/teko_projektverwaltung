@@ -1,0 +1,316 @@
+{% extends 'base/dashboard_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Projektverwaltung</h1>
+
+    <!-- Button zum Hinzufügen eines neuen Projekts -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjektModal">
+            <i class="bi bi-folder-plus"></i> Neues Projekt
+        </button>
+    </div>
+
+    <!-- Tabelle für Projekte -->
+    <table id="projekteTabelle" class="table table-striped nowrap" style="width:100%">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Projekttitel</th>
+                <th>Beschreibung</th>
+                <th>Priorität</th>
+                <th>Status</th>
+                <th>Startdatum (Geplant)</th>
+                <th>Enddatum (Geplant)</th>
+                <th>Startdatum (Effektiv)</th>
+                <th>Enddatum (Effektiv)</th>
+                <th>Vorgehensmodell</th>
+                <th>Projektleiter</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody id="projekteListe">
+            <!-- Dynamisch via JavaScript gefüllt -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal zum Hinzufügen eines Projekts -->
+<div class="modal fade" id="addProjektModal" tabindex="-1" aria-labelledby="addProjektModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProjektModalLabel">Projekt hinzufügen/bearbeiten</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addProjektForm" autocomplete="off">
+                    <input type="hidden" id="editProjektId">
+                    <div class="mb-3">
+                        <label for="projekttitel" class="form-label">Projekttitel</label>
+                        <input type="text" class="form-control" id="projekttitel" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projektbeschreibung" class="form-label">Beschreibung</label>
+                        <textarea class="form-control" id="projektbeschreibung"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prioritaet" class="form-label">Priorität</label>
+                        <select class="form-control" id="prioritaet" required>
+                            <option value="Niedrig">Niedrig</option>
+                            <option value="Mittel" selected>Mittel</option>
+                            <option value="Hoch">Hoch</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-control" id="status" required>
+                            <option value="Geplant">Geplant</option>
+                            <option value="InBearbeitung">In Bearbeitung</option>
+                            <option value="Pausiert">Pausiert</option>
+                            <option value="Abgeschlossen">Abgeschlossen</option>
+                            <option value="Abgebrochen">Abgebrochen</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bewilligungsdatum" class="form-label">Bewilligungsdatum</label>
+                        <input type="date" class="form-control" id="bewilligungsdatum" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="startdatumGeplant" class="form-label">Startdatum (Geplant)</label>
+                        <input type="date" class="form-control" id="startdatumGeplant" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="enddatumGeplant" class="form-label">Enddatum (Geplant)</label>
+                        <input type="date" class="form-control" id="enddatumGeplant" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="startdatumEffektiv" class="form-label">Startdatum (Effektiv)</label>
+                        <input type="date" class="form-control" id="startdatumEffektiv">
+                    </div>
+                    <div class="mb-3">
+                        <label for="enddatumEffektiv" class="form-label">Enddatum (Effektiv)</label>
+                        <input type="date" class="form-control" id="enddatumEffektiv">
+                    </div>
+                    <div class="mb-3">
+                        <label for="vorgehensmodell" class="form-label">Vorgehensmodell</label>
+                        <select class="form-control" id="vorgehensmodell" required>
+                            <option value="Wasserfall">Wasserfall</option>
+                            <option value="Agil" selected>Agil</option>
+                            <option value="Hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projektleiter" class="form-label">Projektleiter</label>
+                        <div class="input-group">
+                            <select class="form-control" id="projektleiter" required>
+                                <!-- Dynamisch via JavaScript gefüllt -->
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.title="Projekte";
+
+function ladePersonen(selectedId = null){
+    fetch("/personen")
+        .then(response => response.json())
+        .then(data => {
+            const projektleiterSelect = document.getElementById("projektleiter");
+            projektleiterSelect.innerHTML = "";
+
+            data.forEach(person => {
+                const option = document.createElement("option");
+                option.value = person.id;
+                option.textContent = `${person.nachname} ${person.vorname}`;
+
+                // Prüfe, ob die ID der aktuellen Person der gespeicherten entspricht
+                if (selectedId && parseInt(selectedId) === person.id) {
+                    option.selected = true;
+                }
+
+                projektleiterSelect.appendChild(option);
+            });
+        });
+}
+
+ladePersonen();
+
+function loadProjekte() {
+    fetch("/projekte")
+        .then(response => response.json())
+        .then(data => {
+
+            if ($.fn.DataTable.isDataTable('#projekteTabelle')) {
+                $('#projekteTabelle').DataTable().destroy();
+            }
+
+            $('#projekteTabelle').DataTable({
+                data: data,
+                responsive: true,
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'csv',
+                        text: 'CSV exportieren',
+                        className: 'btn btn-secondary'
+                    },
+                    {
+                        extend: 'excel',
+                        text: 'Excel exportieren',
+                        className: 'btn btn-success'
+                    }
+                ],
+                columns: [
+                    { data: 'id' },
+                    { data: 'projekttitel' },
+                    { data: 'projektbeschreibung' },
+                    { data: 'prioritaet' },
+                    { data: 'status' },
+                    { data: 'startdatum_geplant' },
+                    { data: 'enddatum_geplant' },
+                    { data: 'startdatum_effektiv' },
+                    { data: 'enddatum_effektiv' },
+                    { data: 'vorgehensmodell' },
+                    { data: 'projektleiter_name' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return `
+                                <a href="/phasenverwaltung/${data.id}" class="btn btn-sm btn-success">
+                                    <i class="bi bi-bar-chart-steps"></i>
+                                </a>
+                                <button class="btn btn-sm btn-warning" onclick="editProjekt('${data.id}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteProjekt('${data.id}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            `;
+                        }
+                    }
+                ]
+            });
+        });
+}
+loadProjekte();
+
+function addProjekt() {
+    const projekt = {
+        projekttitel: document.getElementById("projekttitel").value,
+        bewilligungsdatum: document.getElementById("bewilligungsdatum").value,
+        projektbeschreibung: document.getElementById("projektbeschreibung").value,
+        prioritaet: document.getElementById("prioritaet").value,
+        status: document.getElementById("status").value,
+        startdatum_geplant: document.getElementById("startdatumGeplant").value,
+        enddatum_geplant: document.getElementById("enddatumGeplant").value,
+        startdatum_effektiv: document.getElementById("startdatumEffektiv").value || null,
+        enddatum_effektiv: document.getElementById("enddatumEffektiv").value || null,
+        vorgehensmodell: document.getElementById("vorgehensmodell").value,
+        projektleiter_id: parseInt(document.getElementById("projektleiter").value)
+    };
+
+    fetch("/projekte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projekt)
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadProjekte();
+        document.getElementById("addProjektForm").reset();
+        var modalElement = document.getElementById("addProjektModal");
+        var modalInstance = bootstrap.Modal.getInstance(modalElement);
+        modalInstance.hide();
+        document.body.classList.remove("modal-open");
+        document.querySelector(".modal-backdrop").remove();
+    });
+}
+
+function editProjekt(id) {
+    fetch(`/projekte/${id}`)
+        .then(response => response.json())
+        .then(projekt => {
+            document.getElementById("editProjektId").value = projekt.id;
+            document.getElementById("projekttitel").value = projekt.projekttitel;
+            document.getElementById("bewilligungsdatum").value = projekt.bewilligungsdatum;
+            document.getElementById("projektbeschreibung").value = projekt.projektbeschreibung;
+            document.getElementById("prioritaet").value = projekt.prioritaet;
+            document.getElementById("status").value = projekt.status;
+            document.getElementById("startdatumGeplant").value = projekt.startdatum_geplant;
+            document.getElementById("enddatumGeplant").value = projekt.enddatum_geplant;
+            document.getElementById("startdatumEffektiv").value = projekt.startdatum_effektiv || '';
+            document.getElementById("enddatumEffektiv").value = projekt.enddatum_effektiv || '';
+            document.getElementById("vorgehensmodell").value = projekt.vorgehensmodell;
+
+            // ladePersonen wird hier mit bestehendem Projektleiter aufgerufen!
+            ladePersonen(projekt.projektleiter_id);
+
+            var editModal = new bootstrap.Modal(document.getElementById("addProjektModal"));
+            editModal.show();
+        });
+}
+
+
+function updateProjekt() {
+    const editProjektId = document.getElementById("editProjektId").value;
+    const projekt = {
+        projekttitel: document.getElementById("projekttitel").value,
+        projektbeschreibung: document.getElementById("projektbeschreibung").value,
+        bewilligungsdatum: document.getElementById("bewilligungsdatum").value,
+        prioritaet: document.getElementById("prioritaet").value,
+        status: document.getElementById("status").value,
+        startdatum_geplant: document.getElementById("startdatumGeplant").value,
+        enddatum_geplant: document.getElementById("enddatumGeplant").value,
+        startdatum_effektiv: document.getElementById("startdatumEffektiv").value || null,
+        enddatum_effektiv: document.getElementById("enddatumEffektiv").value || null,
+        vorgehensmodell: document.getElementById("vorgehensmodell").value,
+        projektleiter_id: parseInt(document.getElementById("projektleiter").value)
+    };
+
+    fetch(`/projekte/${editProjektId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projekt)
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadProjekte();
+        var modalElement = document.getElementById("addProjektModal");
+        var modalInstance = bootstrap.Modal.getInstance(modalElement);
+        modalInstance.hide();
+        document.body.classList.remove("modal-open");
+        document.querySelector(".modal-backdrop").remove();
+    });
+}
+
+function deleteProjekt(id) {
+    if (confirm("Möchtest du dieses Projekt wirklich löschen?")) {
+        fetch(`/projekte/${id}`, { method: "DELETE" })
+        .then(() => loadProjekte());
+    }
+}
+
+// Event-Listener für das Formular
+document.addEventListener("DOMContentLoaded", function () {
+    loadProjekte();
+    ladePersonen();
+
+    document.getElementById("addProjektForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+        
+        document.getElementById("editProjektId").value == "" ? addProjekt() : updateProjekt();
+        document.getElementById("addProjektForm").reset();
+    });
+});
+</script>
+{% endblock %}

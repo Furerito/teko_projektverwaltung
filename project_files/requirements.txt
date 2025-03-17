@@ -1,0 +1,14 @@
+flask
+psycopg2-binary
+bcrypt
+qrcode
+python-docx
+mammoth
+pandas
+openpyxl
+pyotp
+pillow
+flask-sqlalchemy
+flask-marshmallow 
+marshmallow-sqlalchemy
+Flask-Migrate

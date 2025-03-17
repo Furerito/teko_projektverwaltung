@@ -1,0 +1,43 @@
+---
+- name: Installiere Docker & Docker-Compose
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+    update_cache: yes
+
+- name: Setze Berechtigungen für Docker
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: Kopiere Docker-Compose Service Datei
+  copy:
+    dest: /etc/systemd/system/docker-compose-the_project.service
+    content: |
+      [Unit]
+      Description=Docker Compose Service for The Project
+      Requires=docker.service
+      After=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/var/www/the_project
+      ExecStart=/usr/bin/docker-compose up -d --remove-orphans
+      ExecStop=/usr/bin/docker-compose down
+      Restart=on-failure
+      User={{ ansible_user }}
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload systemd
+
+- name: Starte Docker-Compose als Dienst
+  systemd:
+    name: docker-compose-the_project
+    enabled: yes
+    state: started
+    daemon_reload: yes

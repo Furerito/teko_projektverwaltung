@@ -1,0 +1,167 @@
+{% extends "base/dashboard_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Administration</h2>
+
+    <details>
+        <summary>Account erstellen</summary>
+        
+        <!-- Formular zum Hinzufügen eines neuen Benutzers -->
+        <form action="/manage_users" method="POST" class="mb-4">
+            <div class="mb-3">
+                <label for="new_username" class="form-label">Benutzername</label>
+                <input type="text" id="new_username" name="new_username" class="form-control max-500" placeholder="Neuen Benutzernamen eingeben" required>
+            </div>
+            <div class="mb-3">
+                <label for="new_password" class="form-label">Passwort</label>
+                <input type="password" id="new_password" name="new_password" class="form-control max-500" placeholder="Passwort eingeben" required>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" id="new_is_superuser" name="new_is_superuser" class="form-check-input">
+                <label for="new_is_superuser" class="form-check-label">Superuser</label>
+            </div>
+            <button type="submit" name="add_user" class="btn btn-sm btn-primary">Account erstellen</button>
+        </form>
+        <hr/>
+    </details>
+
+    <details>
+        <summary>Datenbankoperationen</summary>
+        <div class="d-flex flex-wrap gap-3 mb-3">
+            <div class="card d-flex flex-column" style="width: 18rem;">
+                <div class="card-body d-flex flex-column flex-grow-1">
+                    <h5 class="card-title">Datenbank Initialisierung</h5>
+                    <p class="card-text flex-grow-1">
+                    Wenn du auf den Button klickst, wird der Endpunkt <code>/db/init</code> aufgerufen. 
+                    Dieser Vorgang erstellt die benötigten Tabellen in der PostgreSQL-Datenbank und 
+                    fügt eventuell Initialdaten ein. Falls die Datenbank bereits existiert, kann es sein, 
+                    dass bestehende Daten überschrieben oder aktualisiert werden.
+                    </p>
+                    <button class="btn btn-sm btn-warning mt-auto" onclick="dbManager('init')">Initialisiere Datenbank</button>
+                </div>
+            </div>
+          
+            <div class="card d-flex flex-column" style="width: 18rem;">
+                <div class="card-body d-flex flex-column flex-grow-1">
+                    <h5 class="card-title">Datenbank Migration</h5>
+                    <p class="card-text flex-grow-1">
+                    Der Endpunkt <code>/db/migrate</code> führt notwendige Schema-Änderungen an der Datenbank durch,
+                    um sie auf den neuesten Stand zu bringen, ohne bestehende Daten zu löschen.
+                    </p>
+                    <button class="btn btn-sm btn-info mt-auto" onclick="dbManager('migrate')">Migration durchführen</button>
+                </div>
+            </div>
+
+            <div class="card d-flex flex-column" style="width: 18rem;">
+                <div class="card-body d-flex flex-column flex-grow-1">
+                    <h5 class="card-title">Datenbank Reset</h5>
+                    <p class="card-text flex-grow-1">
+                    Der Endpunkt <code>/db/reset</code> setzt die Datenbank auf ihren Ausgangszustand zurück.
+                    Dabei werden alle Tabellen gelöscht und neu erstellt. Sämtliche gespeicherten Daten gehen dabei verloren.
+                    </p>
+                    <button class="btn btn-sm btn-danger mt-auto" onclick="dbManager('reset')">Reset Datenbank</button>
+                </div>
+            </div>
+
+          </div>
+          
+    </details>
+    
+
+    <!-- Liste der vorhandenen Benutzer -->
+    <table class="table table-striped" id="user_table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Benutzername</th>
+                <th>Passswort</th>
+                <th>Superuser</th>
+                <th>Gesperrt</th>
+                <th></th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <form action="/manage_users" method="POST" class="d-inline">
+                    <td>{{ user.id }}</td> <!-- Direkt auf den Spaltennamen zugreifen -->
+                    <td>
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="text" name="username" value="{{ user.username }}" class="form-control d-inline w-auto mb-2 form-control-sm">
+                    </td>
+                    <td>
+                        <input type="password" name="password" placeholder="Neues Passwort" class="form-control d-inline w-auto mb-2 form-control-sm">    
+                    </td>
+                    <td>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_superuser_{{ user.id }}" name="is_superuser" {{ 'checked' if user.is_superuser else '' }}>
+                         </div>
+                    </td>
+                    <td>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="account_locked_{{ user.id }}" name="account_locked" {{ 'checked' if user.account_locked else '' }}>
+                         </div>
+                    <td>
+                    
+                        <button type="submit" name="edit_user" class="btn btn-sm btn-primary mb-1">Änderungen speichern</button>
+                    </td>
+                </form>
+
+                <td>
+                    <form action="/manage_users" method="POST" class="d-inline">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="reset_2fa" class="btn btn-sm btn-warning mb-1">2FA zurücksetzen</button>
+                    </form>
+                    <br/>
+                    <form action="/manage_users" method="POST" class="d-inline">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <button type="submit" name="delete_user" class="btn btn-sm btn-danger mb-1">Benutzer löschen</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+<script>
+
+async function dbManager(action) {
+    result = await fetch(`/db/${action}`).then(response => response.json());
+    alert(result.message);
+}
+
+$(document).ready(function () {
+    $('#user_table').DataTable({
+        "paging": true,
+        "pageLength": 10,
+        "lengthChange": false,
+        "searching": true,
+        "ordering": true,
+        "info": true,
+        "autoWidth": false,
+        "stateSave": true, // Speichert den Zustand (Sortierung, Suche, etc.)
+        "language": {
+            "search": "Suchen:",
+            "paginate": {
+                "first": "Erste",
+                "last": "Letzte",
+                "next": "Nächste",
+                "previous": "Vorherige"
+            },
+            "info": "Zeige _START_ bis _END_ von _TOTAL_ Einträgen",
+            "infoEmpty": "Keine Einträge verfügbar",
+            "emptyTable": "Keine Daten in der Tabelle vorhanden"
+        },
+        dom: 'frtip'
+    });
+
+});
+</script>
+
+
+{% endblock %}

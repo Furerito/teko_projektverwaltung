@@ -1,0 +1,4 @@
+---
+- import_tasks: setup.yml
+- import_tasks: git_clone.yml
+- import_tasks: docker.yml

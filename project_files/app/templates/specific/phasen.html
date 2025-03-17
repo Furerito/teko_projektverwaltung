@@ -1,0 +1,867 @@
+{% extends 'base/dashboard_base.html' %}
+
+{% block content %}
+<div class="container my-4">
+    <h2 class="mb-3">Projektphasen, Aktivitäten, Meilensteine & Dokumente</h2>
+
+    <div class="mb-4">
+        <h3>Projekt: <span id="projekttitel">Lade Daten...</span></h3>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="projektTab">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#uebsersichtTab">Übersicht</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#phasenTab">Phasen</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aktivitaetenTab">Aktivitäten</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#meilensteineTab">Meilensteine</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dokumenteTab">Dokumente</button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+
+        <!-- Planungsübersicht TAB -->
+        <div class="tab-pane fade show active" id="uebsersichtTab">
+            <div id="gantt"></div>
+        </div>
+
+        <!-- PHASEN TAB -->
+        <div class="tab-pane fade show" id="phasenTab">
+            <!-- Button zum Hinzufügen eines neuen Projekts -->
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="addPhaseBtn">
+                    <i class="bi bi-folder-plus"></i> Neue Phase
+                </button>
+            </div>
+
+            <table id="phasenTabelle" class="table table-striped nowrap" style="width:100%">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Startdatum (Geplant)</th>
+                        <th>Enddatum (Geplant)</th>
+                        <th>Fortschritt (%)</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="phasenBody">
+                    <!-- Dynamisch via JavaScript gefüllt -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- AKTIVITAETEN TAB -->
+        <div class="tab-pane fade" id="aktivitaetenTab">
+            
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="addAktivitaetBtn">
+                    <i class="bi bi-folder-plus"></i> Neue Aktivität
+                </button>
+            </div>
+
+            <table id="aktivitaetenTabelle" class="table table-striped nowrap" style="width:100%">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Aktivität</th>
+                        <th>Phase</th>
+                        <th>Ressource</th>
+                        <th>Geplant (Start - Ende)</th>
+                        <th>Eff. (Start - Ende)</th>
+                        <th>Budget / Eff.Kosten</th>
+                        <th>Fortschritt</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="aktivitaetenBody"></tbody>
+            </table>
+        </div>
+
+        <!-- MEILENSTEINE TAB -->
+        <div class="tab-pane fade" id="meilensteineTab">
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="addMeilensteinBtn">
+                    <i class="bi bi-folder-plus"></i> Neuer Meilenstein
+                </button>
+            </div>
+
+            <table id="meilensteineTabelle" class="table table-striped nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Datum</th>
+                        <th>Phase</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="meilensteineBody"></tbody>
+            </table>
+        </div>
+
+        <!-- DOKUMENTE TAB -->
+        <div class="tab-pane fade" id="dokumenteTab">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="fileUpload" class="form-control my-3"/>
+                <button class="btn btn-secondary"><i class="bi bi-upload"></i> Hochladen</button>
+            </form>
+            <ul class="list-group mt-3" id="dokumentListe"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: PROJEKTPHASE -->
+<div class="modal fade" id="phaseModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="phaseModalLabel">Phase bearbeiten</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="phaseForm">
+          <input type="hidden" id="phaseId">
+
+          <label>Phase Name</label>
+          <input type="text" class="form-control mb-2" id="phase_name" required>
+
+          <label>Status</label>
+          <select class="form-control" id="phaseStatus" required>
+                <option value="Geplant">Geplant</option>
+                <option value="InBearbeitung">In Bearbeitung</option>
+                <option value="Pausiert">Pausiert</option>
+                <option value="Abgeschlossen">Abgeschlossen</option>
+                <option value="Abgebrochen">Abgebrochen</option>
+            </select>
+
+          <label>Startdatum geplant</label>
+          <input type="date" class="form-control mb-2" id="phaseStartGeplant" required>
+
+          <label>Enddatum geplant</label>
+          <input type="date" class="form-control mb-2" id="phaseEndGeplant" required>
+
+          <label>Startdatum effektiv</label>
+          <input type="date" class="form-control mb-2" id="phaseStartEffektiv">
+
+          <label>Enddatum effektiv</label>
+          <input type="date" class="form-control mb-2" id="phaseEndEffektiv">
+
+          <label>Reviewdatum geplant</label>
+          <input type="date" class="form-control mb-2" id="phaseReviewGeplant">
+
+          <label>Reviewdatum effektiv</label>
+          <input type="date" class="form-control mb-2" id="phaseReviewEffektiv">
+
+          <label>Freigabedatum</label>
+          <input type="date" class="form-control mb-2" id="phaseFreigabeDatum">
+
+          <label>Freigabevisum</label>
+          <input type="text" class="form-control mb-2" id="phaseFreigabeVisum">
+
+          <label>Fortschritt (%)</label>
+          <input type="number" class="form-control mb-2" id="phaseFortschritt" min="0" max="100" step="1">
+
+          <button type="submit" class="btn btn-primary">Speichern</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AKTIVITAET -->
+<div class="modal fade" id="aktivitaetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aktivitaetModalLabel">Aktivität bearbeiten</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="aktivitaetForm">
+                    <input type="hidden" id="aktivitaetId">
+
+                    <label>Aktivität Name</label>
+                    <input type="text" class="form-control mb-2" id="aktivitaetName" required>
+
+                    <label>Beschreibung</label>
+                    <textarea class="form-control" id="aktivitaetBeschreibung"></textarea>
+
+                    <div class="mb-3">
+                        <label for="akvtivitaetRessource" class="form-label">Ressource</label>
+                        <select class="form-control" id="akvtivitaetRessource" required>
+                            <!-- Dynamisch via JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    <!-- Phase-Auswahl -->
+                    <div class="mb-3">
+                        <label for="aktivitaetPhase" class="form-label">Zugehörige Phase</label>
+                        <select class="form-control" id="aktivitaetPhase" required>
+                            <!-- Wird per JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    <label>Startdatum geplant</label>
+                    <input type="date" class="form-control mb-2" id="aktivitaetStartGeplant" required>
+
+                    <label>Enddatum geplant</label>
+                    <input type="date" class="form-control mb-2" id="aktivitaetEndGeplant" required>
+
+                    <label>Startdatum effektiv</label>
+                    <input type="date" class="form-control mb-2" id="aktivitaetStartEffektiv">
+
+                    <label>Enddatum effektiv</label>
+                    <input type="date" class="form-control mb-2" id="aktivitaetEndEffektiv">
+
+                    <label>Budget (CHF)</label>
+                    <input type="number" class="form-control mb-2" id="aktivitaetBudget" step="0.01">
+
+                    <label>Effektive Kosten (CHF)</label>
+                    <input type="number" class="form-control mb-2" id="aktivitaetEffKosten" step="0.01">
+
+                    <label>Fortschritt (%)</label>
+                    <input type="number" class="form-control mb-2" id="aktivitaetFortschritt" min="0" max="100" step="1">
+
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: MEILENSTEIN -->
+<div class="modal fade" id="meilensteinModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="meilensteinModalLabel">Meilenstein bearbeiten</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="meilensteinForm">
+                <input type="hidden" id="meilensteinId">
+
+                <label>Name</label>
+                <input type="text" class="form-control mb-2" id="meilensteinName" required>
+
+                <label>Datum</label>
+                <input type="date" class="form-control mb-2" id="meilensteinDatum" required>
+                
+                <!-- Phase-Auswahl -->
+                <div class="mb-3">
+                    <label for="meilensteinPhase" class="form-label">Zugehörige Phase</label>
+                    <select class="form-control" id="meilensteinPhase">
+                        <!-- Wird per JavaScript gefüllt -->
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.title = "Phasenverwaltung";
+
+const projektId = parseInt("{{ projekt_id }}", 10);
+
+// -------------------------------
+// PHASES
+// -------------------------------
+
+function loadPhasen() {
+    fetch(`/projekte/${projektId}/phasen`)
+    .then(response => response.json())
+    .then(data => {
+        // Prüfen, ob DataTable schon existiert -> zerstören
+        if ($.fn.DataTable.isDataTable('#phasenTabelle')) {
+            $('#phasenTabelle').DataTable().destroy();
+        }
+
+        // Nun DataTable neu initialisieren (wie in projekte.html)
+        $('#phasenTabelle').DataTable({
+            data: data,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'CSV exportieren',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'Excel exportieren',
+                    className: 'btn btn-success'
+                }
+            ],
+            columns: [
+                { data: 'id' },
+                { data: 'phase_name' },
+                { data: 'status' },
+                { data: 'startdatum_geplant' },
+                { data: 'enddatum_geplant' },
+                {
+                    data: 'fortschritt',
+                    render: function(data) {
+                        return data ? data + '%' : '0%';
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return `
+                            <button class="btn btn-sm btn-warning" onclick="editPhase(${row.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePhase(${row.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ]
+        });
+    });
+}
+
+
+function editPhase(id) {
+    fetch(`/projektphasen/${id}`)
+    .then(res => res.json())
+    .then(phase => {
+        document.getElementById('phaseId').value = phase.id;
+        document.getElementById('phase_name').value = phase.phase_name;
+        document.getElementById('phaseStatus').value = phase.status;
+        document.getElementById('phaseStartGeplant').value = phase.startdatum_geplant;
+        document.getElementById('phaseEndGeplant').value = phase.enddatum_geplant;
+        document.getElementById('phaseStartEffektiv').value = phase.startdatum_effektiv || "";
+        document.getElementById('phaseEndEffektiv').value = phase.enddatum_effektiv || "";
+        document.getElementById('phaseReviewGeplant').value = phase.reviewdatum_geplant || "";
+        document.getElementById('phaseReviewEffektiv').value = phase.reviewdatum_effektiv || "";
+        document.getElementById('phaseFreigabeDatum').value = phase.freigabedatum || "";
+        document.getElementById('phaseFreigabeVisum').value = phase.freigabevisum || "";
+        document.getElementById('phaseFortschritt').value = phase.fortschritt || 0;
+
+        new bootstrap.Modal(document.getElementById('phaseModal')).show();
+    });
+}
+
+function deletePhase(id) {
+    if(confirm("Diese Phase wirklich löschen?")) {
+        fetch(`/projektphasen/${id}`, {method:'DELETE'}).then(() => ladePhasen());
+    }
+}
+
+document.getElementById('addPhaseBtn').onclick = () => {
+    // Neues Modal
+    document.getElementById('phaseForm').reset();
+    document.getElementById('phaseId').value = "";
+    new bootstrap.Modal(document.getElementById('phaseModal')).show();
+    
+};
+
+
+
+document.getElementById('phaseForm').onsubmit = (e) => {
+    e.preventDefault();
+
+    const phaseId = document.getElementById('phaseId').value;
+    const data = {
+        projekt_id: projektId,
+        phase_name: document.getElementById('phase_name').value,
+        status: document.getElementById('phaseStatus').value,
+        startdatum_geplant: document.getElementById('phaseStartGeplant').value,
+        enddatum_geplant: document.getElementById('phaseEndGeplant').value,
+        startdatum_effektiv: document.getElementById('phaseStartEffektiv').value || null,
+        enddatum_effektiv: document.getElementById('phaseEndEffektiv').value || null,
+        reviewdatum_geplant: document.getElementById('phaseReviewGeplant').value || null,
+        reviewdatum_effektiv: document.getElementById('phaseReviewEffektiv').value || null,
+        freigabedatum: document.getElementById('phaseFreigabeDatum').value || null,
+        freigabevisum: document.getElementById('phaseFreigabeVisum').value || "",
+        fortschritt: document.getElementById('phaseFortschritt').value || 0
+    };
+
+    fetch(phaseId ? `/projektphasen/${phaseId}` : '/projektphasen', {
+        method: phaseId ? 'PUT' : 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    }).then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('phaseModal')).hide();
+        loadPhasen();
+    });
+};
+
+// -------------------------------
+// AKTIVITAETEN
+// -------------------------------
+
+function ladePersonen(selectedId = null){
+    return fetch("/personen")
+        .then(response => response.json())
+        .then(data => {
+            const ressourceSelect = document.getElementById("akvtivitaetRessource");
+            ressourceSelect.innerHTML = "";
+
+            data.forEach(person => {
+                const option = document.createElement("option");
+                option.value = person.id;
+                option.textContent = `${person.nachname} ${person.vorname}`;
+
+                // Prüfe, ob die ID der aktuellen Person der gespeicherten entspricht
+                if (selectedId && parseInt(selectedId) === person.id) {
+                    option.selected = true;
+                }
+
+                ressourceSelect.appendChild(option);
+            });
+        });
+}
+
+document.getElementById('addAktivitaetBtn').onclick = () => {
+    // Neues Modal
+    document.getElementById('aktivitaetForm').reset();
+    document.getElementById('aktivitaetId').value = "";
+    new bootstrap.Modal(document.getElementById('aktivitaetModal')).show();
+    
+    loadPhasesForSelect();
+    ladePersonen();
+};
+
+function loadPhasesForSelect() {
+    return fetch(`/projekte/${projektId}/phasen`)
+    .then(response => response.json())
+    .then(phasen => {
+        const select = document.getElementById('aktivitaetPhase');
+        select.innerHTML = "";  // vorher leeren
+
+        phasen.forEach(phase => {
+            const opt = document.createElement('option');
+            opt.value = phase.id;                    // ID der Phase
+            opt.textContent = phase.phase_name;      // Anzeigename
+            select.appendChild(opt);
+        });
+    })
+    .catch(err => console.error("Fehler beim Laden der Phasen für Select:", err));
+}
+
+function ladeAktivitaeten() {
+    fetch(`/projekte/${projektId}/aktivitaeten`)
+    .then(response => response.json())
+    .then(data => {
+        // Prüfen, ob DataTable schon existiert -> zerstören
+        if ($.fn.DataTable.isDataTable('#aktivitaetenTabelle')) {
+            $('#aktivitaetenTabelle').DataTable().destroy();
+        }
+
+        // DataTable neu initialisieren
+        $('#aktivitaetenTabelle').DataTable({
+            data: data,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'CSV exportieren',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'Excel exportieren',
+                    className: 'btn btn-success'
+                }
+            ],
+            columns: [
+                { data: 'id' },
+                { data: 'name' },
+                { data: 'phase_name' },
+                { data: 'ressource_name' },
+                { 
+                    data: null,
+                    render: function(data) {
+                        return `${data.startdatum_geplant || '-'} - ${data.enddatum_geplant || '-'}`;
+                    }
+                },
+                { 
+                    data: null,
+                    render: function(data) {
+                        return `${data.startdatum_effektiv || '-'} - ${data.enddatum_effektiv || '-'}`;
+                    }
+                },
+                { 
+                    data: null,
+                    render: function(data) {
+                        return `${data.budget || '0.00'} / ${data.effektive_kosten || '0.00'} CHF`;
+                    }
+                },
+                {
+                    data: 'fortschritt',
+                    render: function(data) {
+                        return `<div class="progress">
+                                  <div class="progress-bar" role="progressbar" style="width: ${data || 0}%"
+                                       aria-valuenow="${data || 0}" aria-valuemin="0" aria-valuemax="100">
+                                      ${data || 0}%
+                                  </div>
+                                </div>`;
+                    }
+                },
+                {
+                    data: null,
+                    render: function(data) {
+                        return `
+                            <button class="btn btn-sm btn-warning" onclick="editAktivitaet(${data.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAktivitaet(${data.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ]
+        });
+    })
+    .catch(error => {
+        console.error('Fehler beim Laden der Aktivitäten:', error);
+        document.getElementById('aktivitaetenBody').innerHTML = 
+            '<tr><td colspan="6" class="text-center text-danger">Fehler beim Laden der Aktivitäten</td></tr>';
+    });
+}
+
+async function editAktivitaet(id) {
+    await loadPhasesForSelect();
+    await ladePersonen();
+    fetch(`/aktivitaeten/${id}`)
+    .then(res => res.json())
+    .then(aktivitaet => {
+        document.getElementById('aktivitaetId').value = aktivitaet.id;
+        document.getElementById('aktivitaetName').value = aktivitaet.name;
+        document.getElementById('aktivitaetBeschreibung').value = aktivitaet.beschreibung || '';
+        document.getElementById('aktivitaetPhase').value = aktivitaet.phase_id;
+        document.getElementById('aktivitaetStartGeplant').value = aktivitaet.startdatum_geplant || '';
+        document.getElementById('aktivitaetEndGeplant').value = aktivitaet.enddatum_geplant || '';
+        document.getElementById('aktivitaetStartEffektiv').value = aktivitaet.startdatum_effektiv || '';
+        document.getElementById('aktivitaetEndEffektiv').value = aktivitaet.enddatum_effektiv || '';
+        document.getElementById('aktivitaetBudget').value = aktivitaet.budget || '';
+        document.getElementById('aktivitaetEffKosten').value = aktivitaet.effektive_kosten || '';
+        document.getElementById('aktivitaetFortschritt').value = aktivitaet.fortschritt || 0;
+        
+        // Ressourcen laden, falls vorhanden
+        if (aktivitaet.ressource_id) {
+            document.getElementById('akvtivitaetRessource').value = aktivitaet.ressource_id;
+        }
+        
+        // Phasen laden, falls vorhanden
+        if (aktivitaet.phase_id) {
+            document.getElementById('aktivitaetPhase').value = aktivitaet.phase_id;
+        }
+
+        new bootstrap.Modal(document.getElementById('aktivitaetModal')).show();
+    });
+}
+
+function deleteAktivitaet(id) {
+    if(confirm("Diese Aktivität wirklich löschen?")) {
+        fetch(`/aktivitaeten/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                ladeAktivitaeten();
+            } else {
+                alert("Fehler beim Löschen der Aktivität");
+            }
+        });
+    }
+}
+
+document.getElementById('aktivitaetForm').onsubmit = (e) => {
+    e.preventDefault();
+
+    const aktivitaetId = document.getElementById('aktivitaetId').value;
+    const data = {
+        projektphase_id: document.getElementById('aktivitaetPhase').value,
+        name: document.getElementById('aktivitaetName').value,
+        beschreibung: document.getElementById('aktivitaetBeschreibung').value,
+        ressourcen: document.getElementById('akvtivitaetRessource').value || null,
+        startdatum_geplant: document.getElementById('aktivitaetStartGeplant').value,
+        enddatum_geplant: document.getElementById('aktivitaetEndGeplant').value,
+        startdatum_effektiv: document.getElementById('aktivitaetStartEffektiv').value || null,
+        enddatum_effektiv: document.getElementById('aktivitaetEndEffektiv').value || null,
+        budget: document.getElementById('aktivitaetBudget').value || null,
+        effektive_kosten: document.getElementById('aktivitaetEffKosten').value || null,
+        fortschritt: document.getElementById('aktivitaetFortschritt').value || 0
+    };
+
+    fetch(aktivitaetId ? `/aktivitaeten/${aktivitaetId}` : '/aktivitaeten', {
+        method: aktivitaetId ? 'PUT' : 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    }).then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('aktivitaetModal')).hide();
+        ladeAktivitaeten();
+    });
+};
+
+// -------------------------------
+// MEILENSTEINE
+// -------------------------------
+function ladeMeilensteine() {
+    fetch(`/projekte/${projektId}/meilensteine`)
+    .then(response => response.json())
+    .then(data => {
+        // Prüfen, ob DataTable schon existiert -> zerstören
+        if ($.fn.DataTable.isDataTable('#meilensteineTabelle')) {
+            $('#meilensteineTabelle').DataTable().destroy();
+        }
+
+        // DataTable neu initialisieren
+        $('#meilensteineTabelle').DataTable({
+            data: data,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'CSV exportieren',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'Excel exportieren',
+                    className: 'btn btn-success'
+                }
+            ],
+            columns: [
+                { data: 'id' },
+                { data: 'name' },
+                { data: 'datum' },
+                { data: 'phase_name' },
+                {
+                    data: null,
+                    render: function(data) {
+                        return `
+                            <button class="btn btn-sm btn-warning" onclick="editMeilenstein(${data.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteMeilenstein(${data.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ]
+        });
+    })
+    .catch(error => {
+        console.error('Fehler beim Laden der Meilensteine:', error);
+        document.getElementById('meilensteineBody').innerHTML = 
+            '<tr><td colspan="4" class="text-center text-danger">Fehler beim Laden der Meilensteine</td></tr>';
+    });
+}
+
+function loadPhasesForMeilensteinSelect() {
+    return fetch(`/projekte/${projektId}/phasen`)
+    .then(response => response.json())
+    .then(phasen => {
+        const select = document.getElementById('meilensteinPhase');
+        select.innerHTML = "";  // vorher leeren
+
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = "Keine Phase";
+        select.appendChild(opt);
+
+        phasen.forEach(phase => {
+            const opt = document.createElement('option');
+            opt.value = phase.id;
+            opt.textContent = phase.phase_name;
+            select.appendChild(opt);
+        });
+    })
+    .catch(err => console.error("Fehler beim Laden der Phasen für Meilensteine:", err));
+}
+
+document.getElementById('addMeilensteinBtn').onclick = () => {
+    // Neues Modal
+    document.getElementById('meilensteinForm').reset();
+    document.getElementById('meilensteinId').value = "";
+    loadPhasesForMeilensteinSelect();
+    new bootstrap.Modal(document.getElementById('meilensteinModal')).show();
+};
+
+async function editMeilenstein(id) {
+    await loadPhasesForMeilensteinSelect();
+    fetch(`/meilensteine/${id}`)
+    .then(res => res.json())
+    .then(meilenstein => {
+        document.getElementById('meilensteinId').value = meilenstein.id;
+        document.getElementById('meilensteinName').value = meilenstein.name;
+        document.getElementById('meilensteinDatum').value = meilenstein.datum;
+        
+        if (meilenstein.phase_id) {
+            document.getElementById('meilensteinPhase').value = meilenstein.phase_id;
+        }
+
+        new bootstrap.Modal(document.getElementById('meilensteinModal')).show();
+    });
+}
+
+function deleteMeilenstein(id) {
+    if(confirm("Diesen Meilenstein wirklich löschen?")) {
+        fetch(`/meilensteine/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                ladeMeilensteine();
+            } else {
+                alert("Fehler beim Löschen des Meilensteins");
+            }
+        });
+    }
+}
+
+document.getElementById('meilensteinForm').onsubmit = (e) => {
+    e.preventDefault();
+
+    const meilensteinId = document.getElementById('meilensteinId').value;
+    const data = {
+        projektphase_id: document.getElementById('meilensteinPhase').value,
+        name: document.getElementById('meilensteinName').value,
+        datum: document.getElementById('meilensteinDatum').value,
+        projekt_id: projektId
+    };
+
+    fetch(meilensteinId ? `/meilensteine/${meilensteinId}` : '/meilensteine', {
+        method: meilensteinId ? 'PUT' : 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    }).then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('meilensteinModal')).hide();
+        ladeMeilensteine();
+    });
+};
+
+// -------------------------------
+// DOKUMENTE
+// -------------------------------
+function ladeDokumente() {
+    fetch(`/projekte/${projektId}/dokumente`)
+    .then(res => res.json())
+    .then(dokumente => {
+        const ul = document.getElementById('dokumentListe');
+        ul.innerHTML = '';
+        dokumente.forEach(doc => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between';
+
+            const link = document.createElement('a');
+            link.href = doc.url;
+            link.textContent = doc.dokumentenname;
+            link.setAttribute('download', doc.dokumentenname);
+
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm btn-danger';
+            btn.innerHTML = '<i class="bi bi-trash"></i>';
+            btn.onclick = () => {
+                if(confirm('Dokument löschen?')) {
+                    fetch(`/dokumente/${doc.id}`, {method:'DELETE'}).then(() => ladeDokumente());
+                }
+            };
+
+            li.appendChild(link);
+            li.appendChild(btn);
+            ul.appendChild(li);
+        });
+    });
+}
+
+function ladeProjekt() {
+    fetch(`/projekte/${projektId}`)
+    .then(res => res.json())
+    .then(projekt => {
+        console.log(projekt);
+        const elem = document.getElementById('projekttitel');
+        elem.innerHTML = projekt.projekttitel;
+        
+    });
+}
+
+// gantt.js
+
+// Funktion zum Abrufen der Daten von der API
+async function fetchGanttData(projektId) {
+    try {
+        const response = await fetch(`/projekte/${projektId}/gantt`);
+        if (!response.ok) {
+            throw new Error("Fehler beim Abrufen der Daten");
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Fehler:", error);
+    }
+}
+
+// Hauptfunktion, um das Gantt-Diagramm zu erstellen
+async function initGanttChart(projektId) {
+    const ganttData = await fetchGanttData(projektId);
+    if (ganttData) {
+        createGanttChart(ganttData);
+    }
+}
+
+// Initialisiere das Gantt-Diagramm mit der Projekt-ID
+initGanttChart(1); // Ersetzen Sie 1 durch die tatsächliche Projekt-ID
+
+
+document.getElementById('uploadForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const file = document.getElementById('fileUpload').files[0];
+    if(!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch(`/projekte/${projektId}/dokumente`, {
+        method:'POST',
+        body: formData
+    }).then(() => {
+        document.getElementById('fileUpload').value = '';
+        ladeDokumente();
+    });
+});
+
+// -------------------------------
+// INIT
+// -------------------------------
+ladeProjekt();
+//ladePhasen();
+loadPhasen()
+ladeAktivitaeten();
+ladeMeilensteine();
+ladeDokumente();
+ladeGantt();
+</script>
+{% endblock %}

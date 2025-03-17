@@ -1,0 +1,6 @@
+---
+- name: Deployment Playbook für Webserver
+  hosts: webservers
+  become: true  # Root-Rechte erforderlich
+  roles:
+    - deploy_project

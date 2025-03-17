@@ -1,0 +1,36 @@
+services:
+  database:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: zU_3N-jt9]sK*Lw=Cyr
+      POSTGRES_DB: 2fa_session
+    ports:
+      - "3356:5432"
+    volumes:
+      - ./uploads:/app/uploads
+      - db_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+
+  python_app:
+    build:
+      context: ./project_files
+      dockerfile: dockerfile
+    container_name: python_app
+    volumes:
+      - ./project_files:/app  # Lokales Verzeichnis wird in den Container gemountet
+    ports:
+      - "3355:3355"
+    networks:
+      - app_network
+    depends_on:
+      - database
+
+volumes:
+  db_data:
+
+networks:
+  app_network:
