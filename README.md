@@ -1,4 +1,4 @@
-# TEKO Semesterarbeit Projektvewaltung
+# TEKO Semesterarbeit Projektverwaltung
 
 ### Projekt basiert auf 
 https://github.com/Furerito/python_platform_base
