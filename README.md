@@ -26,7 +26,7 @@ docker-compose up
 Stelle sicher, dass du SSH-Zugriff auf die Zielhosts hast und dich mit einem Benutzer einloggst, der sudo-Rechte besitzt.
 
 #### Hosts konfigurieren
-Hinterlege deine Zielhosts in der Datei ansible/inventory.ini.
+Hinterlege deine Zielhosts in der Datei **ansible/inventory.ini**.
 
 Ansible-Playbook ausführen
 ```bash
