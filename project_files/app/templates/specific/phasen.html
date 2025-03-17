@@ -11,7 +11,7 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs" id="projektTab">
         <li class="nav-item">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#uebsersichtTab">Übersicht</button>
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#uebsersichtTab" id="uebersichtTabButton">Übersicht</button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#phasenTab">Phasen</button>
@@ -270,6 +270,13 @@
         </div>
     </div>
 </div>
+
+
+
+
+<!-- GANTT STUFF -->
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script src="{{ url_for('static', filename='js/gantt.js') }}"></script>
 
 <script>
 document.title = "Phasenverwaltung";
@@ -832,8 +839,7 @@ async function initGanttChart(projektId) {
     }
 }
 
-// Initialisiere das Gantt-Diagramm mit der Projekt-ID
-initGanttChart(1); // Ersetzen Sie 1 durch die tatsächliche Projekt-ID
+
 
 
 document.getElementById('uploadForm').addEventListener('submit', e => {
@@ -853,15 +859,23 @@ document.getElementById('uploadForm').addEventListener('submit', e => {
     });
 });
 
+document.getElementById('projektTab').addEventListener('click', e => {
+    if (e.target.id === 'uebersichtTabButton') {
+        initGanttChart(projektId);
+    }
+});
+
+
 // -------------------------------
 // INIT
 // -------------------------------
 ladeProjekt();
-//ladePhasen();
 loadPhasen()
 ladeAktivitaeten();
 ladeMeilensteine();
 ladeDokumente();
-ladeGantt();
+
+initGanttChart(projektId); 
+
 </script>
 {% endblock %}
