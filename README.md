@@ -14,29 +14,24 @@
    git clone https://github.com/Furerito/teko_projektverwaltung.git
 In das Projektverzeichnis wechseln
 
-bash
-Kopieren
-Bearbeiten
 cd teko_projektverwaltung
-Container starten
-
-bash
-Kopieren
-Bearbeiten
+### Container starten
+```bash
 docker-compose up
-Deployment mit Ansible
-SSH-Zugriff
+```
+### Deployment mit Ansible
+
 Stelle sicher, dass du SSH-Zugriff auf die Zielhosts hast und dich mit einem Benutzer einloggst, der sudo-Rechte besitzt.
 
-Hosts konfigurieren
+### Hosts konfigurieren
 Hinterlege deine Zielhosts in der Datei ansible/inventory.ini.
 
 Ansible-Playbook ausführen
-
-bash
-Kopieren
-Bearbeiten
+```bash
 ansible-playbook -i inventory.ini deploy.yml
-Applikation
+```
+
+## Applikation
 Nach dem Deployment ist die Applikation unter http://[IP]:3355 erreichbar.
 Ein erster Benutzer "Admin" mit dem Passwort "5678" ist bereits angelegt.
+Verwende deine bevorzugte Authenticator App
