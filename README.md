@@ -1,5 +1,9 @@
-# Platform Basis mit Mehrfachauthentisierung
+# TEKO Semesterarbeit Projektvewaltung
 
+### Projekt basiert auf 
+https://github.com/Furerito/python_platform_base
+
+## Grundlegende Technologien
 - Docker für Python Applikation  
 - Docker-compose für Infrastruktur mit Postgres DB  
 - Postgres DB  
