@@ -1130,8 +1130,8 @@ async function editDokument(id) {
         document.getElementById('dokumentDatei').required = false;
         
         // Dropdown-Werte setzen
-        if (dokument.projektphase_id) {
-            document.getElementById('dokumentPhase').value = dokument.projektphase_id;
+        if (dokument.phase_id) {
+            document.getElementById('dokumentPhase').value = dokument.phase_id;
         } else {
             document.getElementById('dokumentPhase').value = '';
         }
