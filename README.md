@@ -15,7 +15,7 @@
 In das Projektverzeichnis wechseln
 
 cd teko_projektverwaltung
-### Container starten
+#### Container starten
 ```bash
 docker-compose up
 ```
@@ -23,7 +23,7 @@ docker-compose up
 
 Stelle sicher, dass du SSH-Zugriff auf die Zielhosts hast und dich mit einem Benutzer einloggst, der sudo-Rechte besitzt.
 
-### Hosts konfigurieren
+#### Hosts konfigurieren
 Hinterlege deine Zielhosts in der Datei ansible/inventory.ini.
 
 Ansible-Playbook ausführen
