@@ -12,9 +12,10 @@
 1. **Repository klonen**  
    ```bash
    git clone https://github.com/Furerito/teko_projektverwaltung.git
-In das Projektverzeichnis wechseln
-
+#### In das Projektverzeichnis wechseln
+```bash
 cd teko_projektverwaltung
+```
 #### Container starten
 ```bash
 docker-compose up
