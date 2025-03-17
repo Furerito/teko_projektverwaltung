@@ -19,6 +19,29 @@ class VorgehensmodellEnum(enum.Enum):
     Agil = "Agil"
     Hybrid = "Hybrid"
 
+class KostenartEnum(enum.Enum):
+    Hardware = "Hardware"
+    Software = "Software"
+    Dienstleistungen = "Dienstleistungen"
+    Reisespesen = "Reisespesen"
+    Unterkunft = "Unterkunft"
+    Nachbesserung = "Nachbesserung"
+
+class RessourceFunktion(enum.Enum):
+    Projektleiter = "Projektleiter"
+    Projektmitarbeiter = "Projektmitarbeiter"
+    Architekt = "Architekt"
+    Entwickler = "Entwickler"
+    Tester = "Tester"
+    BusinessAnalyst = "Business Analyst"
+    PrductOwner = "Product Owner"
+    ScrumMaster = "Scrum Master"
+    Designer = "Designer"
+    QualitaetsSicherung = "Qualitätssicherung"
+    Dokumentation = "Dokumentation"
+    Stakeholder = "Stakeholder"
+    Kunde = "Kunde"
+
 class Projekt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     projekttitel = db.Column(db.String(255), nullable=False)
@@ -77,6 +100,8 @@ class Aktivitaet(db.Model):
     fortschritt = db.Column(db.Float, nullable=True)
     
     ressourcen = db.Column(db.Integer, db.ForeignKey('person.id'), nullable=False)
+    rolle = db.Column(Enum(RessourceFunktion), nullable=True)
+    auslastung = db.Column(db.Float, nullable=True)
     externe_kosten = db.relationship('ExterneKosten', backref='aktivitaet', cascade="all, delete")
     rapport = db.relationship('Rapport', backref='aktivitaet', cascade="all, delete")
 
@@ -94,9 +119,12 @@ class Rapport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     aktivitaet_id = db.Column(db.Integer, db.ForeignKey('aktivitaet.id'), nullable=False)
     datum = db.Column(db.Date, nullable=False)
+    titel = db.Column(db.String(255), nullable=False)
     kommentar = db.Column(db.String(255), nullable=True)
     aufwand_stunden = db.Column(db.Float, nullable=False)
+    material_kosten = db.Column(db.Float, nullable=False)
     verbrauchtes_material = db.Column(db.String(255), nullable=True)
+    kostenart = db.Column(Enum(KostenartEnum), nullable=True)
 
 class Dokument(db.Model):
     id = db.Column(db.Integer, primary_key=True)

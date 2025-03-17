@@ -35,6 +35,9 @@ def init_projekte_routes(app):
     
     aktivitaet_schema = AktivitaetSchema()
     aktivitaeten_schema = AktivitaetSchema(many=True)
+
+    rapport_schema = RapportSchema()
+    rapporte_schema = RapportSchema(many=True)
     
     # API-Endpunkte für Projekte
     @app.route('/projekte', methods=['POST'])
@@ -252,6 +255,11 @@ def init_projekte_routes(app):
     @app.route('/rapporte', methods=['POST'])
     def erstelle_rapport():
         data = request.json
+        
+        # Kostenart als Enum behandeln
+        if 'kostenart' in data:
+            data['kostenart'] = KostenartEnum(data['kostenart'])
+        
         neuer_rapport = Rapport(**data)
         db.session.add(neuer_rapport)
         db.session.commit()
@@ -264,6 +272,76 @@ def init_projekte_routes(app):
         db.session.commit()
         return jsonify({'message': 'Rapport gelöscht'})
     
+    @app.route('/projekte/<int:projekt_id>/rapporte', methods=['GET'])
+    def get_rapporte(projekt_id):
+        """
+        Liefert alle Rapporte eines Projekts zurück, inklusive Informationen zur Aktivität.
+        """
+        # Query über die Aktivitäten und dann über die Projektphasen
+        rapporte = db.session.query(Rapport).join(
+            Aktivitaet, Rapport.aktivitaet_id == Aktivitaet.id
+        ).join(
+            Projektphase, Aktivitaet.projektphase_id == Projektphase.id
+        ).filter(
+            Projektphase.projekt_id == projekt_id
+        ).all()
+        
+        result = []
+        for rapport in rapporte:
+            rapport_data = rapport_schema.dump(rapport)
+            
+            # Wenn die Kostenart ein Enum ist, holen wir den Wert heraus
+            if rapport.kostenart:
+                rapport_data['kostenart'] = rapport.kostenart.value
+            
+            # Aktivität-Informationen hinzufügen
+            aktivitaet = Aktivitaet.query.get(rapport.aktivitaet_id)
+            if aktivitaet:
+                rapport_data['aktivitaet_name'] = aktivitaet.name
+            
+            result.append(rapport_data)
+            
+        return jsonify(result)
+
+    @app.route('/rapporte/<int:id>', methods=['GET'])
+    def get_einzelner_rapport(id):
+        """
+        Liefert einen einzelnen Rapport anhand der ID zurück.
+        """
+        rapport = Rapport.query.get(id)
+        if not rapport:
+            return jsonify({"error": "Rapport nicht gefunden"}), 404
+        
+        rapport_data = rapport_schema.dump(rapport)
+        
+        # Wenn die Kostenart ein Enum ist, holen wir den Wert heraus
+        if rapport.kostenart:
+            rapport_data['kostenart'] = rapport.kostenart.value
+        
+        return jsonify(rapport_data)
+
+    @app.route('/rapporte/<int:id>', methods=['PUT'])
+    def bearbeite_rapport(id):
+        """
+        Aktualisiert einen Rapport anhand der ID.
+        """
+        rapport = Rapport.query.get(id)
+        if not rapport:
+            return jsonify({"error": "Rapport nicht gefunden"}), 404
+        
+        data = request.json
+        
+        # Kostenart als Enum behandeln
+        if 'kostenart' in data:
+            data['kostenart'] = KostenartEnum(data['kostenart'])
+        
+        for key, value in data.items():
+            setattr(rapport, key, value)
+        
+        db.session.commit()
+        return rapport_schema.jsonify(rapport)
+
+    #API Endpunkte für Aktivitäten
     @app.route('/projekte/<int:projekt_id>/aktivitaeten', methods=['GET'])
     def get_aktivitaeten(projekt_id):
         # Query aktivitaeten through the projektphase relationship
@@ -358,6 +436,18 @@ def init_projekte_routes(app):
         for dok in dokumente:
             item = dokument_schema.dump(dok)
             item['url'] = f"/{dok.dateipfad}"
+            
+            # Phasen- und Aktivitäts-Namen auflösen
+            if dok.projektphase_id:
+                phase = Projektphase.query.get(dok.projektphase_id)
+                if phase:
+                    item['phase_name'] = phase.phase_name
+            
+            if dok.aktivitaet_id:
+                aktivitaet = Aktivitaet.query.get(dok.aktivitaet_id)
+                if aktivitaet:
+                    item['aktivitaet_name'] = aktivitaet.name
+                    
             result.append(item)
         return jsonify(result)
 
@@ -369,12 +459,18 @@ def init_projekte_routes(app):
             dateipfad = os.path.join(UPLOAD_FOLDER, filename)
             file.save(dateipfad)
 
+            # Get aktivitaet_id and projektphase_id from form data, use None if not provided
+            aktivitaet_id = request.form.get('aktivitaet_id')
+            projektphase_id = request.form.get('projektphase_id')
+
             dokument = Dokument(
                 dokumentenname=filename,
                 dateipfad=dateipfad,
                 typ=file.content_type,
                 hochladedatum=datetime.utcnow(),
-                projekt_id=projekt_id
+                projekt_id=projekt_id,
+                aktivitaet_id=aktivitaet_id,
+                projektphase_id=projektphase_id
             )
             db.session.add(dokument)
             db.session.commit()
@@ -394,6 +490,63 @@ def init_projekte_routes(app):
             db.session.commit()
             return jsonify({'message': 'Dokument gelöscht'})
         return jsonify({'error': 'Dokument nicht gefunden'}), 404
+
+
+    @app.route('/dokumente/<int:id>', methods=['GET'])
+    def get_einzelnes_dokument(id):
+        """
+        Liefert ein einzelnes Dokument anhand der ID zurück.
+        """
+        dokument = Dokument.query.get(id)
+        if not dokument:
+            return jsonify({"error": "Dokument nicht gefunden"}), 404
+        
+        dokument_data = dokument_schema.dump(dokument)
+        dokument_data['url'] = f"/{dokument.dateipfad}"
+        
+        # Phasen- und Aktivitäts-Namen auflösen
+        if dokument.projektphase_id:
+            phase = Projektphase.query.get(dokument.projektphase_id)
+            if phase:
+                dokument_data['phase_name'] = phase.phase_name
+                dokument_data['phase_id'] = phase.id
+        
+        if dokument.aktivitaet_id:
+            aktivitaet = Aktivitaet.query.get(dokument.aktivitaet_id)
+            if aktivitaet:
+                dokument_data['aktivitaet_name'] = aktivitaet.name
+                dokument_data['aktivitaet_id'] = aktivitaet.id
+                
+        return jsonify(dokument_data)
+    
+    @app.route('/dokumente/<int:id>', methods=['PUT'])
+    def update_dokument(id):
+        """
+        Aktualisiert die Metadaten eines Dokuments anhand der ID.
+        Die Datei selbst kann nicht geändert werden.
+        """
+        dokument = Dokument.query.get(id)
+        if not dokument:
+            return jsonify({"error": "Dokument nicht gefunden"}), 404
+        
+        data = request.json
+        
+        # Aktualisiere nur die erlaubten Felder
+        if 'dokumentenname' in data:
+            dokument.dokumentenname = data['dokumentenname']
+            
+        # Phase
+        if 'projektphase_id' in data:
+            # None oder leerer String werden zu None konvertiert
+            dokument.projektphase_id = data['projektphase_id'] if data['projektphase_id'] else None
+        
+        # Aktivität
+        if 'aktivitaet_id' in data:
+            # None oder leerer String werden zu None konvertiert
+            dokument.aktivitaet_id = data['aktivitaet_id'] if data['aktivitaet_id'] else None
+        
+        db.session.commit()
+        return dokument_schema.jsonify(dokument)
 
 
     @app.route('/projekte/<int:projekt_id>/gantt', methods=['GET'])

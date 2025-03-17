@@ -2,10 +2,9 @@
 
 {% block content %}
 <div class="container my-4">
-    <h2 class="mb-3">Projektphasen, Aktivitäten, Meilensteine & Dokumente</h2>
 
     <div class="mb-4">
-        <h3>Projekt: <span id="projekttitel">Lade Daten...</span></h3>
+        <h2><span id="projekttitel">Lade Daten...</span></h2>
     </div>
 
     <!-- Tabs -->
@@ -17,10 +16,13 @@
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#phasenTab">Phasen</button>
         </li>
         <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#meilensteineTab">Meilensteine</button>
+        </li>
+        <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#aktivitaetenTab">Aktivitäten</button>
         </li>
         <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#meilensteineTab">Meilensteine</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rapporteTab">Rapporte</button>
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dokumenteTab">Dokumente</button>
@@ -77,6 +79,8 @@
                         <th>Aktivität</th>
                         <th>Phase</th>
                         <th>Ressource</th>
+                        <th>Rolle</th>
+                        <th>Pensum</th>
                         <th>Geplant (Start - Ende)</th>
                         <th>Eff. (Start - Ende)</th>
                         <th>Budget / Eff.Kosten</th>
@@ -97,7 +101,7 @@
             </div>
 
             <table id="meilensteineTabelle" class="table table-striped nowrap" style="width:100%">
-                <thead>
+                <thead class="table-dark">
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
@@ -110,13 +114,53 @@
             </table>
         </div>
 
+                <!-- RAPPORTE TAB -->
+        <div class="tab-pane fade" id="rapporteTab">
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="addRapportBtn">
+                    <i class="bi bi-folder-plus"></i> Neuer Rapport
+                </button>
+            </div>
+        
+            <table id="rapporteTabelle" class="table table-striped nowrap" style="width:100%">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Titel</th>
+                        <th>Aktivität</th>
+                        <th>Datum</th>
+                        <th>Aufwand (h)</th>
+                        <th>Materialkosten</th>
+                        <th>Kostenart</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="rapporteBody"></tbody>
+            </table>
+        </div>
+
         <!-- DOKUMENTE TAB -->
         <div class="tab-pane fade" id="dokumenteTab">
-            <form id="uploadForm" enctype="multipart/form-data">
-                <input type="file" id="fileUpload" class="form-control my-3"/>
-                <button class="btn btn-secondary"><i class="bi bi-upload"></i> Hochladen</button>
-            </form>
-            <ul class="list-group mt-3" id="dokumentListe"></ul>
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" id="addDokumentBtn">
+                    <i class="bi bi-file-earmark-plus"></i> Neues Dokument
+                </button>
+            </div>
+            
+            <table id="dokumenteTabelle" class="table table-striped nowrap" style="width:100%">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Typ</th>
+                        <th>Hochgeladen am</th>
+                        <th>Phase</th>
+                        <th>Aktivität</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="dokumenteBody"></tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -203,6 +247,31 @@
                             <!-- Dynamisch via JavaScript gefüllt -->
                         </select>
                     </div>
+
+                    <div class="mb-3">
+                        <label for="aktivitaetRolle" class="form-label">Rolle</label>
+                        <select class="form-control" id="aktivitaetRolle" required>
+                            <option value="Projektleiter">Projektleiter</option>
+                            <option value="Projektmitarbeiter">Projektmitarbeiter</option>
+                            <option value="Architekt">Architekt</option>
+                            <option value="Entwickler">Entwickler</option>
+                            <option value="Tester">Tester</option>
+                            <option value="Business Analyst">Business Analyst</option>
+                            <option value="Product Owner">Product Owner</option>
+                            <option value="Scrum Master">Scrum Master</option>
+                            <option value="Designer">Designer</option>
+                            <option value="Qualitätssicherung">Qualitätssicherung</option>
+                            <option value="Dokumentation">Dokumentation</option>
+                            <option value="Stakeholder">Stakeholder</option>
+                            <option value="Kunde">Kunde</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="akvtivitaetPensum" class="form-label">Auslastung (Pensum)</label>
+                        <input type="number" class="form-control mb-2" id="akvtivitaetPensum" min="5" max="100" step="5">
+                    </div>
+
                     <!-- Phase-Auswahl -->
                     <div class="mb-3">
                         <label for="aktivitaetPhase" class="form-label">Zugehörige Phase</label>
@@ -271,7 +340,112 @@
     </div>
 </div>
 
+<!-- MODAL: RAPPORT -->
+<div class="modal fade" id="rapportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rapportModalLabel">Rapport bearbeiten</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="rapportForm">
+                    <input type="hidden" id="rapportId">
+                    
+                    <label>Titel</label>
+                    <input type="text" class="form-control mb-2" id="rapportTitel" required>
+                    
+                    <!-- Aktivitäten-Auswahl -->
+                    <div class="mb-3">
+                        <label for="rapportAktivitaet" class="form-label">Zugehörige Aktivität</label>
+                        <select class="form-control" id="rapportAktivitaet" required>
+                            <!-- Wird per JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    
+                    <!-- Kostenart-Auswahl -->
+                    <div class="mb-3">
+                        <label for="rapportKostenart" class="form-label">Kostenart</label>
+                        <select class="form-control" id="rapportKostenart" required>
+                            <option value="Hardware">Hardware</option>
+                            <option value="Software">Software</option>
+                            <option value="Dienstleistungen">Dienstleistungen</option>
+                            <option value="Reisespesen">Reisespesen</option>
+                            <option value="Unterkunft">Unterkunft</option>
+                            <option value="Nachbesserung">Nachbesserung</option>
+                        </select>
+                    </div>
+                    
+                    <label>Datum</label>
+                    <input type="date" class="form-control mb-2" id="rapportDatum" required>
+                    
+                    <label>Kommentar</label>
+                    <textarea class="form-control mb-2" id="rapportKommentar"></textarea>
+                    
+                    <label>Aufwand (Stunden)</label>
+                    <input type="number" class="form-control mb-2" id="rapportAufwandStunden" step="0.5" min="0" required>
+                    
+                    <label>Materialkosten (CHF)</label>
+                    <input type="number" class="form-control mb-2" id="rapportMaterialKosten" step="0.01" min="0" required>
+                    
+                    <label>Verbrauchtes Material</label>
+                    <input type="text" class="form-control mb-2" id="rapportVerbrauchtMaterial">
+                    
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
+
+<!-- MODAL: DOKUMENT -->
+<div class="modal fade" id="dokumentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dokumentModalLabel">Dokument hochladen</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dokumentForm" enctype="multipart/form-data">
+                    <input type="hidden" id="dokumentId">
+                    
+                    <!-- Dateiauswahl - nur im Upload-Modus sichtbar -->
+                    <div class="mb-3" id="dateiUploadContainer">
+                        <label for="dokumentDatei" class="form-label">Datei auswählen</label>
+                        <input type="file" class="form-control" id="dokumentDatei">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dokumentName" class="form-label">Dokumentname</label>
+                        <input type="text" class="form-control" id="dokumentName" required>
+                    </div>
+                    
+                    <!-- Phase-Auswahl -->
+                    <div class="mb-3">
+                        <label for="dokumentPhase" class="form-label">Zugehörige Phase (optional)</label>
+                        <select class="form-control" id="dokumentPhase">
+                            <option value="">Keine spezifische Phase</option>
+                            <!-- Wird per JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    
+                    <!-- Aktivitäten-Auswahl -->
+                    <div class="mb-3">
+                        <label for="dokumentAktivitaet" class="form-label">Zugehörige Aktivität (optional)</label>
+                        <select class="form-control" id="dokumentAktivitaet">
+                            <option value="">Keine spezifische Aktivität</option>
+                            <!-- Wird per JavaScript gefüllt -->
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="dokumentSubmitBtn">Hochladen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <!-- GANTT STUFF -->
@@ -279,6 +453,7 @@
 <script src="{{ url_for('static', filename='js/gantt.js') }}"></script>
 
 <script>
+
 document.title = "Phasenverwaltung";
 
 const projektId = parseInt("{{ projekt_id }}", 10);
@@ -470,6 +645,7 @@ function ladeAktivitaeten() {
     fetch(`/projekte/${projektId}/aktivitaeten`)
     .then(response => response.json())
     .then(data => {
+        console.log(data);  
         // Prüfen, ob DataTable schon existiert -> zerstören
         if ($.fn.DataTable.isDataTable('#aktivitaetenTabelle')) {
             $('#aktivitaetenTabelle').DataTable().destroy();
@@ -500,6 +676,13 @@ function ladeAktivitaeten() {
                 { data: 'name' },
                 { data: 'phase_name' },
                 { data: 'ressource_name' },
+                { data: 'rolle' },
+                { 
+                    data: null,
+                    render: function(data) {
+                        return `${data.auslastung || '-'} %`;
+                    }
+                },
                 { 
                     data: null,
                     render: function(data) {
@@ -580,6 +763,16 @@ async function editAktivitaet(id) {
             document.getElementById('aktivitaetPhase').value = aktivitaet.phase_id;
         }
 
+        // Rollen laden, falls vorhanden
+        if (aktivitaet.rolle) {
+            document.getElementById('aktivitaetRolle').value = aktivitaet.rolle;
+        }
+
+        // Phasen laden, falls vorhanden
+        if (aktivitaet.auslastung) {
+            document.getElementById('akvtivitaetPensum').value = aktivitaet.auslastung;
+        }
+
         new bootstrap.Modal(document.getElementById('aktivitaetModal')).show();
     });
 }
@@ -614,7 +807,10 @@ document.getElementById('aktivitaetForm').onsubmit = (e) => {
         enddatum_effektiv: document.getElementById('aktivitaetEndEffektiv').value || null,
         budget: document.getElementById('aktivitaetBudget').value || null,
         effektive_kosten: document.getElementById('aktivitaetEffKosten').value || null,
-        fortschritt: document.getElementById('aktivitaetFortschritt').value || 0
+        fortschritt: document.getElementById('aktivitaetFortschritt').value || 0,
+        
+        rolle: document.getElementById('aktivitaetRolle').value || null,
+        auslastung: document.getElementById('akvtivitaetPensum').value || null
     };
 
     fetch(aktivitaetId ? `/aktivitaeten/${aktivitaetId}` : '/aktivitaeten', {
@@ -773,36 +969,279 @@ document.getElementById('meilensteinForm').onsubmit = (e) => {
 // -------------------------------
 // DOKUMENTE
 // -------------------------------
+
+// Event-Handler für "Neues Dokument"-Button
+document.getElementById('addDokumentBtn').onclick = () => {
+    // Form zurücksetzen und Modal öffnen
+    document.getElementById('dokumentForm').reset();
+    document.getElementById('dokumentName').value = "";
+    
+    // Phasen und Aktivitäten für Auswahl laden
+    ladePhasenForDokument();
+    ladeAktivitaetenForDokument();
+    
+    new bootstrap.Modal(document.getElementById('dokumentModal')).show();
+};
+
+// Phasen für Dokument-Dropdown laden
+function ladePhasenForDokument() {
+    return fetch(`/projekte/${projektId}/phasen`)
+    .then(response => response.json())
+    .then(phasen => {
+        const select = document.getElementById('dokumentPhase');
+        // Die erste Option (Keine spezifische Phase) beibehalten
+        select.innerHTML = "<option value=''>Keine spezifische Phase</option>";
+
+        phasen.forEach(phase => {
+            const option = document.createElement('option');
+            option.value = phase.id;
+            option.textContent = phase.phase_name;
+            select.appendChild(option);
+        });
+    })
+    .catch(err => console.error("Fehler beim Laden der Phasen für Dokumente:", err));
+}
+
+// Aktivitäten für Dokument-Dropdown laden
+function ladeAktivitaetenForDokument() {
+    return fetch(`/projekte/${projektId}/aktivitaeten`)
+    .then(response => response.json())
+    .then(aktivitaeten => {
+        const select = document.getElementById('dokumentAktivitaet');
+        // Die erste Option (Keine spezifische Aktivität) beibehalten
+        select.innerHTML = "<option value=''>Keine spezifische Aktivität</option>";
+
+        aktivitaeten.forEach(aktivitaet => {
+            const option = document.createElement('option');
+            option.value = aktivitaet.id;
+            option.textContent = aktivitaet.name;
+            select.appendChild(option);
+        });
+    })
+    .catch(err => console.error("Fehler beim Laden der Aktivitäten für Dokumente:", err));
+}
+
+// Verbesserte Funktion zum Laden der Dokumente
 function ladeDokumente() {
     fetch(`/projekte/${projektId}/dokumente`)
-    .then(res => res.json())
-    .then(dokumente => {
-        const ul = document.getElementById('dokumentListe');
-        ul.innerHTML = '';
-        dokumente.forEach(doc => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between';
+    .then(response => response.json())
+    .then(data => {
+        // Prüfen, ob DataTable schon existiert -> zerstören
+        if ($.fn.DataTable.isDataTable('#dokumenteTabelle')) {
+            $('#dokumenteTabelle').DataTable().destroy();
+        }
 
-            const link = document.createElement('a');
-            link.href = doc.url;
-            link.textContent = doc.dokumentenname;
-            link.setAttribute('download', doc.dokumentenname);
-
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-sm btn-danger';
-            btn.innerHTML = '<i class="bi bi-trash"></i>';
-            btn.onclick = () => {
-                if(confirm('Dokument löschen?')) {
-                    fetch(`/dokumente/${doc.id}`, {method:'DELETE'}).then(() => ladeDokumente());
+        // DataTable neu initialisieren
+        $('#dokumenteTabelle').DataTable({
+            data: data,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'CSV exportieren',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'Excel exportieren',
+                    className: 'btn btn-success'
                 }
-            };
-
-            li.appendChild(link);
-            li.appendChild(btn);
-            ul.appendChild(li);
+            ],
+            columns: [
+                { data: 'id' },
+                { 
+                    data: 'dokumentenname',
+                    render: function(data, type, row) {
+                        return `<a href="${row.url}" target="_blank" download="${data}">${data}</a>`;
+                    }
+                },
+                { data: 'typ' },
+                { data: 'hochladedatum' },
+                { 
+                    data: 'phase_name', 
+                    render: function(data) {
+                        return data || "Keine Phase";
+                    }
+                },
+                { 
+                    data: 'aktivitaet_name',
+                    render: function(data) {
+                        return data || "Keine Aktivität";
+                    }
+                },
+                {
+                    data: null,
+                    render: function(data) {
+                        return `
+                            <button class="btn btn-sm btn-warning" onclick="editDokument(${data.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDokument(${data.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ]
         });
+    })
+    .catch(error => {
+        console.error('Fehler beim Laden der Dokumente:', error);
+        document.getElementById('dokumenteBody').innerHTML = 
+            '<tr><td colspan="7" class="text-center text-danger">Fehler beim Laden der Dokumente</td></tr>';
     });
 }
+
+// Dokument löschen
+function deleteDokument(id) {
+    if(confirm("Dieses Dokument wirklich löschen?")) {
+        fetch(`/dokumente/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                ladeDokumente();
+            } else {
+                alert("Fehler beim Löschen des Dokuments");
+            }
+        });
+    }
+}
+
+// Dokument bearbeiten
+async function editDokument(id) {
+    // Phasen und Aktivitäten laden
+    await ladePhasenForDokument();
+    await ladeAktivitaetenForDokument();
+    
+    // Dokument-Daten abrufen
+    fetch(`/dokumente/${id}`)
+    .then(res => res.json())
+    .then(dokument => {
+        document.getElementById('dokumentId').value = dokument.id;
+        document.getElementById('dokumentName').value = dokument.dokumentenname || '';
+        
+        // Datei-Upload verstecken, da wir nur Metadaten bearbeiten
+        document.getElementById('dateiUploadContainer').style.display = 'none';
+        document.getElementById('dokumentDatei').required = false;
+        
+        // Dropdown-Werte setzen
+        if (dokument.projektphase_id) {
+            document.getElementById('dokumentPhase').value = dokument.projektphase_id;
+        } else {
+            document.getElementById('dokumentPhase').value = '';
+        }
+        
+        if (dokument.aktivitaet_id) {
+            document.getElementById('dokumentAktivitaet').value = dokument.aktivitaet_id;
+        } else {
+            document.getElementById('dokumentAktivitaet').value = '';
+        }
+        
+        // Modal-Titel und Button-Text ändern
+        document.getElementById('dokumentModalLabel').textContent = 'Dokument bearbeiten';
+        document.getElementById('dokumentSubmitBtn').textContent = 'Speichern';
+        
+        // Modal öffnen
+        new bootstrap.Modal(document.getElementById('dokumentModal')).show();
+    });
+}
+
+// Event-Handler für "Neues Dokument"-Button 
+document.getElementById('addDokumentBtn').onclick = async () => {
+    // Form zurücksetzen und Modal öffnen
+    document.getElementById('dokumentForm').reset();
+    document.getElementById('dokumentId').value = "";
+    
+    // Datei-Upload anzeigen und als required markieren
+    document.getElementById('dateiUploadContainer').style.display = 'block';
+    document.getElementById('dokumentDatei').required = true;
+    
+    // Modal-Titel und Button-Text setzen
+    document.getElementById('dokumentModalLabel').textContent = 'Dokument hochladen';
+    document.getElementById('dokumentSubmitBtn').textContent = 'Hochladen';
+    
+    // Phasen und Aktivitäten für Auswahl laden
+    await ladePhasenForDokument();
+    await ladeAktivitaetenForDokument();
+    
+    new bootstrap.Modal(document.getElementById('dokumentModal')).show();
+};
+
+// Formular-Handler für Dokument hochladen/bearbeiten
+document.getElementById('dokumentForm').onsubmit = (e) => {
+    e.preventDefault();
+    
+    const dokumentId = document.getElementById('dokumentId').value;
+    
+    if (dokumentId) {
+        // BEARBEITEN-MODUS: Bestehende Dokument-Metadaten aktualisieren
+        const updateData = {
+            dokumentenname: document.getElementById('dokumentName').value,
+            projektphase_id: document.getElementById('dokumentPhase').value || null,
+            aktivitaet_id: document.getElementById('dokumentAktivitaet').value || null
+        };
+        
+        fetch(`/dokumente/${dokumentId}`, {
+            method: 'PUT',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(updateData)
+        })
+        .then(response => {
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('dokumentModal')).hide();
+                ladeDokumente();
+            } else {
+                alert('Fehler beim Aktualisieren des Dokuments');
+            }
+        });
+    } else {
+        // UPLOAD-MODUS: Neues Dokument hochladen
+        const datei = document.getElementById('dokumentDatei').files[0];
+        if (!datei) {
+            alert('Bitte wählen Sie eine Datei aus.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', datei);
+        
+        // Dokumentname hinzufügen, falls angegeben
+        const name = document.getElementById('dokumentName').value;
+        if (name) {
+            formData.append('dokumentenname', name);
+        }
+        
+        // Phase-ID hinzufügen, falls ausgewählt
+        const phaseId = document.getElementById('dokumentPhase').value;
+        if (phaseId) {
+            formData.append('projektphase_id', phaseId);
+        }
+        
+        // Aktivitäts-ID hinzufügen, falls ausgewählt
+        const aktivitaetId = document.getElementById('dokumentAktivitaet').value;
+        if (aktivitaetId) {
+            formData.append('aktivitaet_id', aktivitaetId);
+        }
+        
+        fetch(`/projekte/${projektId}/dokumente`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('dokumentModal')).hide();
+                ladeDokumente();
+            } else {
+                alert('Fehler beim Hochladen des Dokuments');
+            }
+        });
+    }
+};
 
 function ladeProjekt() {
     fetch(`/projekte/${projektId}`)
@@ -816,7 +1255,6 @@ function ladeProjekt() {
 }
 
 // gantt.js
-
 // Funktion zum Abrufen der Daten von der API
 async function fetchGanttData(projektId) {
     try {
@@ -841,24 +1279,6 @@ async function initGanttChart(projektId) {
 
 
 
-
-document.getElementById('uploadForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const file = document.getElementById('fileUpload').files[0];
-    if(!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    fetch(`/projekte/${projektId}/dokumente`, {
-        method:'POST',
-        body: formData
-    }).then(() => {
-        document.getElementById('fileUpload').value = '';
-        ladeDokumente();
-    });
-});
-
 document.getElementById('projektTab').addEventListener('click', e => {
     if (e.target.id === 'uebersichtTabButton') {
         initGanttChart(projektId);
@@ -866,16 +1286,207 @@ document.getElementById('projektTab').addEventListener('click', e => {
 });
 
 
+
+// -------------------------------
+// RAPPORTE
+// -------------------------------
+
+// Funktion zum Laden aller Rapporte für das aktuelle Projekt
+function ladeRapporte() {
+    fetch(`/projekte/${projektId}/rapporte`)
+    .then(response => response.json())
+    .then(data => {
+        // Prüfen, ob DataTable schon existiert -> zerstören
+        if ($.fn.DataTable.isDataTable('#rapporteTabelle')) {
+            $('#rapporteTabelle').DataTable().destroy();
+        }
+
+        // DataTable neu initialisieren
+        $('#rapporteTabelle').DataTable({
+            data: data,
+            responsive: true,
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.22/i18n/German.json"
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                {
+                    extend: 'csv',
+                    text: 'CSV exportieren',
+                    className: 'btn btn-secondary'
+                },
+                {
+                    extend: 'excel',
+                    text: 'Excel exportieren',
+                    className: 'btn btn-success'
+                }
+            ],
+            columns: [
+                { data: 'id' },
+                { data: 'titel' },
+                { data: 'aktivitaet_name' },
+                { data: 'datum' },
+                { 
+                    data: 'aufwand_stunden',
+                    render: function(data) {
+                        return `${data || 0} h`;
+                    }
+                },
+                { 
+                    data: 'material_kosten',
+                    render: function(data) {
+                        return `${data || 0} CHF`;
+                    }
+                },
+                {
+                    data: 'kostenart',
+                    render: function(data) {
+                        return data || 'Nicht angegeben';
+                    }
+                },
+                {
+                    data: null,
+                    render: function(data) {
+                        return `
+                            <button class="btn btn-sm btn-warning" onclick="editRapport(${data.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteRapport(${data.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                }
+            ]
+        });
+    })
+    .catch(error => {
+        console.error('Fehler beim Laden der Rapporte:', error);
+        document.getElementById('rapporteBody').innerHTML = 
+            '<tr><td colspan="8" class="text-center text-danger">Fehler beim Laden der Rapporte</td></tr>';
+    });
+}
+
+// Aktivitäten für den Rapport-Dropdown laden
+function ladeAktivitaetenForRapport() {
+    fetch(`/projekte/${projektId}/aktivitaeten`)
+    .then(response => response.json())
+    .then(aktivitaeten => {
+        const select = document.getElementById('rapportAktivitaet');
+        select.innerHTML = "";  // vorher leeren
+
+        aktivitaeten.forEach(aktivitaet => {
+            const option = document.createElement('option');
+            option.value = aktivitaet.id;
+            option.textContent = aktivitaet.name;
+            select.appendChild(option);
+        });
+    })
+    .catch(err => console.error("Fehler beim Laden der Aktivitäten für Rapport:", err));
+}
+
+// Event-Handler für "Neuer Rapport"-Button
+document.getElementById('addRapportBtn').onclick = () => {
+    // Form zurücksetzen und Modal öffnen
+    document.getElementById('rapportForm').reset();
+    document.getElementById('rapportId').value = "";
+    
+    // Heutiges Datum vorbelegen
+    const heute = new Date().toISOString().split('T')[0];
+    document.getElementById('rapportDatum').value = heute;
+    
+    // Aktivitäten für Auswahl laden
+    ladeAktivitaetenForRapport();
+    
+    new bootstrap.Modal(document.getElementById('rapportModal')).show();
+};
+
+// Rapport löschen
+function deleteRapport(id) {
+    if(confirm("Diesen Rapport wirklich löschen?")) {
+        fetch(`/rapporte/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                ladeRapporte();
+            } else {
+                alert("Fehler beim Löschen des Rapports");
+            }
+        });
+    }
+}
+
+// Einzelnen Rapport laden und bearbeiten
+async function editRapport(id) {
+    await ladeAktivitaetenForRapport();
+    
+    fetch(`/rapporte/${id}`)
+    .then(res => res.json())
+    .then(rapport => {
+        document.getElementById('rapportId').value = rapport.id;
+        document.getElementById('rapportTitel').value = rapport.titel;
+        document.getElementById('rapportDatum').value = rapport.datum;
+        document.getElementById('rapportKommentar').value = rapport.kommentar || '';
+        document.getElementById('rapportAufwandStunden').value = rapport.aufwand_stunden || 0;
+        document.getElementById('rapportMaterialKosten').value = rapport.material_kosten || 0;
+        document.getElementById('rapportVerbrauchtMaterial').value = rapport.verbrauchtes_material || '';
+        
+        // Kostenart auswählen, falls vorhanden
+        if (rapport.kostenart) {
+            document.getElementById('rapportKostenart').value = rapport.kostenart;
+        }
+        
+        // Aktivität auswählen, falls vorhanden
+        if (rapport.aktivitaet_id) {
+            document.getElementById('rapportAktivitaet').value = rapport.aktivitaet_id;
+        }
+
+        new bootstrap.Modal(document.getElementById('rapportModal')).show();
+    });
+}
+
+// Formular-Handler für Rapport speichern
+document.getElementById('rapportForm').onsubmit = (e) => {
+    e.preventDefault();
+
+    const rapportId = document.getElementById('rapportId').value;
+    const data = {
+        aktivitaet_id: document.getElementById('rapportAktivitaet').value,
+        titel: document.getElementById('rapportTitel').value,
+        datum: document.getElementById('rapportDatum').value,
+        kostenart: document.getElementById('rapportKostenart').value,
+        kommentar: document.getElementById('rapportKommentar').value || null,
+        aufwand_stunden: document.getElementById('rapportAufwandStunden').value || 0,
+        material_kosten: document.getElementById('rapportMaterialKosten').value || 0,
+        verbrauchtes_material: document.getElementById('rapportVerbrauchtMaterial').value || null
+    };
+
+    fetch(rapportId ? `/rapporte/${rapportId}` : '/rapporte', {
+        method: rapportId ? 'PUT' : 'POST',
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('rapportModal')).hide();
+            ladeRapporte();
+        } else {
+            alert("Fehler beim Speichern des Rapports");
+        }
+    });
+};
+
 // -------------------------------
 // INIT
 // -------------------------------
 ladeProjekt();
-loadPhasen()
+loadPhasen();
 ladeAktivitaeten();
 ladeMeilensteine();
 ladeDokumente();
+ladeRapporte();  // Hier die Funktion zum Laden der Rapporte ergänzen
 
-initGanttChart(projektId); 
+initGanttChart(projektId);
 
 </script>
 {% endblock %}

@@ -52,6 +52,7 @@ function createGanttChart(data) {
 
     // Initialisiere das Gantt-Diagramm
     const gantt = new Gantt("#gantt", tasks, {
+        //language: 'de',
         on_click: function (task) {
             console.log("Task angeklickt:", task);
         },
