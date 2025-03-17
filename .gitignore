@@ -172,3 +172,4 @@ cython_debug/
 
 
 project_files/static/uploads/*
+!project_files/static/uploads/.gitignore
