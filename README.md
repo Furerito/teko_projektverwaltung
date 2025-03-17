@@ -33,7 +33,7 @@ Ansible-Playbook ausführen
 ansible-playbook -i inventory.ini deploy.yml
 ```
 
-## Applikation
+# Applikation
 Nach dem Deployment ist die Applikation unter http://[IP]:3355 erreichbar.
 Ein erster Benutzer "Admin" mit dem Passwort "5678" ist bereits angelegt.
 Verwende deine bevorzugte Authenticator App
